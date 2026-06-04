@@ -6,10 +6,13 @@ import '../css/Home.css'
 
 function Home() {
     const [searchQuery, setSearchQuery] = useState("");
-    const [movies, setMovies] = useState([]);
+    const [movies, setMovies] = useState([]); //for main grid
+    const [searchResultsDropdown, setSearchResultsDropdown] = useState([]); //for search suggestions
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [dropDownVisible, setDropdownVisible] = useState(false);
 
+    //loading popular movies on initial render
     useEffect(() => {
         const loadPopularMovies = async () => {
             try {
@@ -26,29 +29,55 @@ function Home() {
         loadPopularMovies();
     }, [])
 
+    //Live search for dropdown suggestions
+    useEffect(() => {
+        const fetchSuggetions = async () => {
+            if (!searchQuery.trim()) {
+                setSearchResultsDropdown([]);
+                setDropdownVisible(false);
+                return;
+            }
+            try {
+                const results = await searchMovies(searchQuery);
+                setSearchResultsDropdown(results.slice(0, 5)); //limit to top 5 suggestions
+                setDropdownVisible(true);
+            } catch (err) {
+                console.log(err)
+                setSearchResultsDropdown([]);
+                setDropdownVisible(false);
+            }
+        }
+        const debounceTimeout = setTimeout(fetchSuggetions, 300); //debounce to avoid too many API calls
+
+        return () => clearTimeout(debounceTimeout);
+    }, [searchQuery]);
 
 
-    const handleSearch = async(e) => {
+
+
+    //on submit, update the main movie grid with search results
+    const handleSearch = async (e) => {
         e.preventDefault();
-        if(!searchQuery.trim()) {
+        if (!searchQuery.trim()) {
             setError("Please enter a search query.");
             return;
         }
-        if(loading) return;
+        if (loading) return;
         setLoading(true);
 
-        try{
+        try {
             const searchResults = await searchMovies(searchQuery);
-            setMovies(searchResults);
+            setMovies(searchResults); //update main grid with search results
             setError(null);
 
-        }catch(err) {
+        } catch (err) {
             console.log(err)
             setError("Failed to search movies...")
-        }        finally {
+        } finally {
             setLoading(false);
+            setDropdownVisible(false); // this hides dropdown after submit 
         }
-        
+
     };
 
     return (
@@ -60,21 +89,37 @@ function Home() {
                     className="search-input"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => { if (searchResultsDropdown.length > 0) setDropdownVisible(true) }} //show dropdown only if there are results
+                    onBlur={() => setTimeout(() => setDropdownVisible(false), 200)} // hide it adter a short delay when click outside
                 />
                 <button type="submit" className="search-button">Search</button>
+
+                {/* Live search dropdown */}
+
+                {dropDownVisible && searchResultsDropdown.length > 0 && (
+                    <ul className="search-dropdown">
+                        {searchResultsDropdown.map(movie => (
+                            <li key={movie.id} onClick={() =>  handleSearchSuggestion(movie) }>
+                                {movie.title}
+                            </li>
+                        ))}
+                    </ul>
+                )}
             </form>
+            
+
             {error && <div className="error-message">{error}</div>}
 
-            {loading? (<div className="loading">Loading...</div>) : 
+            {loading ? (<div className="loading">Loading...</div>) :
                 (<div className="movies-grid">
                     {movies.map((movie) => (
                         <MovieCard movie={movie} key={movie.id} />
                     ))}
                 </div>)
             }
-            
 
-            
+
+
         </div>
     );
 }
