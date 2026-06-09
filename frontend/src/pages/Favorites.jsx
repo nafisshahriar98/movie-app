@@ -6,7 +6,7 @@ import MovieCard from '../components/MovieCard';
 function Favorite() {
 
     const { favorites } = useContext(MovieContext);
-    if (favorites) {
+    if (favorites.length > 0) {
 
         return (
             <div className="favorites">

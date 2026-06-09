@@ -1,0 +1,20 @@
+
+> movie-app-nextjs@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.7 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.165.218:3000
+- Environments: .env.local
+✓ Ready in 351ms
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of D:\React Projects\React Movie Tutorial\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * D:\React Projects\React Movie Tutorial\movie-app-nextjs\package-lock.json
+
+
+ GET / 200 in 304ms (next.js: 121ms, application-code: 184ms)
+ GET /favorites 200 in 895ms (next.js: 844ms, application-code: 51ms)
+ GET / 200 in 84ms (next.js: 6ms, application-code: 78ms)

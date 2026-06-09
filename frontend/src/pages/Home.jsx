@@ -29,6 +29,12 @@ function Home() {
         loadPopularMovies();
     }, [])
 
+    const handleSearchSuggestion = (movie) => {
+        setSearchQuery(movie.title); //update search input with clicked suggestion
+        setMovies([movie]); //update main grid to show only the clicked suggestion
+        setDropdownVisible(false); //hide dropdown after selection
+    }
+
     //Live search for dropdown suggestions
     useEffect(() => {
         const fetchSuggetions = async () => {
