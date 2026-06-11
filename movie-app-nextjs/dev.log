@@ -18,3 +18,19 @@
  GET / 200 in 304ms (next.js: 121ms, application-code: 184ms)
  GET /favorites 200 in 895ms (next.js: 844ms, application-code: 51ms)
  GET / 200 in 84ms (next.js: 6ms, application-code: 78ms)
+ GET /auth/signin 404 in 609ms (next.js: 512ms, application-code: 98ms)
+ GET / 200 in 46ms (next.js: 9ms, application-code: 37ms)
+ GET /favorites 200 in 48ms (next.js: 7ms, application-code: 41ms)
+ GET / 200 in 53ms (next.js: 8ms, application-code: 44ms)
+ GET /favorites 200 in 57ms (next.js: 7ms, application-code: 50ms)
+ GET / 200 in 62ms (next.js: 9ms, application-code: 53ms)
+✓ Compiled in 206ms
+ GET / 200 in 312ms (next.js: 202ms, application-code: 111ms)
+✓ Compiled in 260ms
+ GET / 200 in 271ms (next.js: 161ms, application-code: 110ms)
+✓ Compiled in 131ms
+ GET / 200 in 285ms (next.js: 171ms, application-code: 113ms)
+✓ Compiled in 131ms
+ GET / 200 in 525ms (next.js: 260ms, application-code: 265ms)
+✓ Compiled in 105ms
+ GET / 200 in 336ms (next.js: 203ms, application-code: 133ms)
