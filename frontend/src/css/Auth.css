@@ -1,0 +1,36 @@
+ .auth-page {
+     max-width: 400px;
+     margin: 40px auto;
+     padding: 20px;
+ }
+
+ .auth-form {
+     display: flex;
+     flex-direction: column;
+     gap: 12px;
+ }
+
+ .auth-form label {
+     display: flex;
+     flex-direction: column;
+     gap: 4px;
+ }
+
+ .auth-form input {
+     padding: 8px;
+     font-size: 1rem;
+ }
+
+ .auth-form button {
+     padding: 10px;
+     cursor: pointer;
+ }
+
+ .auth-form button:disabled {
+     opacity: 0.6;
+     cursor: not-allowed;
+ }
+
+ .error-message {
+     color: #d22;
+ }
