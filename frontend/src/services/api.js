@@ -18,3 +18,17 @@ export const searchMovies = async (query) => {
     const data = await response.json()
     return data.results;
 };
+
+export const getMovieTrailer = async (movieId) => {
+    const response = await fetch(`${BASE_URL}/movie/${movieId}/videos?api_key=${API_KEY}`);
+    if (!response.ok) throw new Error(`Failed to fetch videos: ${response.status}`);
+    const data = await response.json();
+    const trailer = data.results.find(v => v.type === "Trailer" && v.site === "YouTube");
+    return trailer ? trailer.key : null;
+};
+
+export const getMovieDetails = async (movieId) => {
+    const response = await fetch(`${BASE_URL}/movie/${movieId}?api_key=${API_KEY}`);
+    if (!response.ok) throw new Error(`Failed to fetch details: ${response.status}`);
+    return await response.json();
+};
