@@ -1,22 +1,24 @@
 const API_KEY = "de9c8afc4725cc9d8d6e01736341db71";
 const BASE_URL = "https://api.themoviedb.org/3";
 
-export const getPopularMovies = async () => {
-    const response = await fetch(`${BASE_URL}/movie/popular?api_key=${API_KEY}`);
+export const getPopularMovies = async (page = 1) => {
+    const response = await
+        fetch(`${BASE_URL}/movie/popular?api_key=${API_KEY}&page=${page}`);
     if (!response.ok) {
         throw new Error(`Failed to fetch movies: ${response.status}`);
     }
     const data = await response.json()
-    return data.results
+    return { movies: data.results, totalPages: data.total_pages };
 };
 
-export const searchMovies = async (query) => {
-    const response = await fetch(`${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}`);
+export const searchMovies = async (query, page = 1) => {
+    const response = await
+        fetch(`${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&page=${page}`);
     if (!response.ok) {
         throw new Error(`Failed to fetch movies: ${response.status}`);
     }
     const data = await response.json()
-    return data.results;
+    return { movies: data.results, totalPages: data.total_pages };
 };
 
 export const getMovieTrailer = async (movieId) => {

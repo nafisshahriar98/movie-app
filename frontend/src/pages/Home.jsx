@@ -11,13 +11,16 @@ function Home() {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
     const [dropDownVisible, setDropdownVisible] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
 
     //loading popular movies on initial render
     useEffect(() => {
         const loadPopularMovies = async () => {
             try {
-                const popularMovies = await getPopularMovies();
-                setMovies(popularMovies);
+                const {movies:results, totalPages} = await getPopularMovies(1);
+                setMovies(results);
+                setHasMore(1<totalPages);
             } catch (err) {
                 console.log(err)
                 setError("Failed to load movies...")
@@ -44,7 +47,7 @@ function Home() {
                 return;
             }
             try {
-                const results = await searchMovies(searchQuery);
+                const {movies:results, totalPages} = await searchMovies(searchQuery);
                 setSearchResultsDropdown(results.slice(0, 5)); //limit to top 5 suggestions
                 setDropdownVisible(true);
             } catch (err) {
@@ -72,8 +75,10 @@ function Home() {
         setLoading(true);
 
         try {
-            const searchResults = await searchMovies(searchQuery);
-            setMovies(searchResults); //update main grid with search results
+            const {movies:results, totalPages} = await searchMovies(searchQuery,1);
+            setMovies(results); //update main grid with search results
+            setPage(1);
+            setHasMore(1<totalPages);
             setError(null);
 
         } catch (err) {
@@ -85,6 +90,23 @@ function Home() {
         }
 
     };
+
+    //loading more pages
+    const handleLoadMore = async()=>{
+        const nextPage=page+1;
+        try{
+            const{movies:result, totalPages} = searchQuery.trim()
+            ? await searchMovies(searchQuery, nextPage)
+            :await getPopularMovies(nextPage);
+
+            setMovies(prev=>[...prev, ...result]); //appened, not repalced
+            setPage(nextPage);
+            setHasMore(nextPage<totalPages);
+        }catch(err){
+            setError("Failed to laod more movies...");
+        }
+    }
+
 
     return (
         <div className="home">
@@ -123,6 +145,12 @@ function Home() {
                     ))}
                 </div>)
             }
+
+            {hasMore && !loading &&(
+                <button className="load-more-btn" onClick={handleLoadMore}>
+                    Load More
+                </button>
+            )}
 
 
 
