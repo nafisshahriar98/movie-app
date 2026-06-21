@@ -95,7 +95,7 @@
 }
 
 .movie-info p {
-  color: #999;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
