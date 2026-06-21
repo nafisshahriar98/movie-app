@@ -8,22 +8,25 @@ import NavBar from "./components/NavBar";
 import { AuthProvider } from './contexts/AuthContext';
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import { ThemeProvider } from './contexts/ThemeContext';
 
 function App() {
 
   return (
     <AuthProvider>
-      <MovieProvider>
-        <NavBar />
-        <main className='main-content'>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/favorites" element={<Favorites />} />
-          </Routes>
-        </main>
-      </MovieProvider>
+      <ThemeProvider>
+        <MovieProvider>
+          <NavBar />
+          <main className='main-content'>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/favorites" element={<Favorites />} />
+            </Routes>
+          </main>
+        </MovieProvider>
+      </ThemeProvider>
     </AuthProvider>
   );
 }
