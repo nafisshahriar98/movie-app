@@ -4,6 +4,7 @@ import { getMovieDetails, getMovieTrailer } from "../services/api";
 import { useMovieContext } from "../contexts/MovieContext";
 import TrailerModal from "../components/TrailerModal";
 import WatchProviders from "../components/WatchProviders";
+import CastSection from "../components/CastSection";
 import "../css/MovieDetail.css";
 
 function MovieDetail() {
@@ -127,6 +128,7 @@ function MovieDetail() {
                         </button>
                     </div>
                     <WatchProviders movieId={id} />
+                    <CastSection movieId={id} />
                 </div>
             </div>
             {showModal && (
