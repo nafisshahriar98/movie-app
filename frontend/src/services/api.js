@@ -34,3 +34,10 @@ export const getMovieDetails = async (movieId) => {
     if (!response.ok) throw new Error(`Failed to fetch details: ${response.status}`);
     return await response.json();
 };
+
+export const getWatchProviders = async (movieId) => {
+    const response = await fetch(`${BASE_URL}/movie/${movieId}/watch/providers?api_key=${API_KEY}`);
+    if (!response.ok) throw new Error(`Failed to fetch watch providers: ${response.status}`);
+    const data = await response.json();
+    return data.results ?? null;
+};

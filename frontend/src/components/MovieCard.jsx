@@ -25,7 +25,6 @@ function MovieCard({ movie }) {
     //clicking the image, the trailer is played
     const handleImageClick = async () => {
         const key = await getMovieTrailer(movie.id);
-        console.log("Trailer key:", key);
         if (key) {
             setTrailerKey(key);
             setShowModal(true);
@@ -46,7 +45,7 @@ function MovieCard({ movie }) {
             <img
                 src={
                     movie.poster_path
-                        ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+                        ? `/tmdb-image/t/p/w500${movie.poster_path}`
                         : "/no-poster.png"
                 }
                 alt={movie.title}

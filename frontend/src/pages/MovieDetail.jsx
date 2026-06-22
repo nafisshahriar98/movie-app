@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { getMovieDetails, getMovieTrailer } from "../services/api";
 import { useMovieContext } from "../contexts/MovieContext";
 import TrailerModal from "../components/TrailerModal";
+import WatchProviders from "../components/WatchProviders";
 import "../css/MovieDetail.css";
 
 function MovieDetail() {
@@ -12,6 +13,7 @@ function MovieDetail() {
     const [trailerKey, setTrailerKey] = useState(null);
     const [showModal, setShowModal] = useState(false);
 
+
     //favorite button
     const { addToFavorites, removeFromFavorites, isFavorite } = useMovieContext();
     const favorite = movie ? isFavorite(movie.id) : false;
@@ -20,7 +22,6 @@ function MovieDetail() {
         const fetchDetails = async () => {
             try {
                 const data = await getMovieDetails(id);
-                //console.log("backdrop_path:", data.backdrop_path);
                 setMovie(data);
             } catch (err) {
                 console.error(err);
@@ -65,13 +66,15 @@ function MovieDetail() {
         return `${h}h ${m}m`;
     }
 
+
+
     return (
         <div className="movie-detail">
             {/* Backdrop banner image */}
             {movie.backdrop_path && (
                 <div className="detail-backdrop">
                     <img
-                        src={`https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`}
+                        src={`/tmdb-image/t/p/w1280${movie.backdrop_path}`}
                         alt={movie.title}
                     />
                     <div className="backdrop-overlay" />
@@ -85,7 +88,7 @@ function MovieDetail() {
                     <img
                         src={
                             movie.poster_path
-                                ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+                                ? `/tmdb-image/t/p/w500${movie.poster_path}`
                                 : "/no-poster.png"
                         }
                         alt={movie.title}
@@ -123,17 +126,9 @@ function MovieDetail() {
                             {favorite ? "❤️ Saved" : "🤍 Add to Favorites"}
                         </button>
                     </div>
-
-                    {/* Budget / Revenue */}
-                    <div className="detail-financials">
-                        <span>Budget: {formatMoney(movie.budget)}</span>
-                        <span>Revenue: {formatMoney(movie.revenue)}</span>
-                    </div>
-
+                    <WatchProviders movieId={id} />
                 </div>
-
             </div>
-
             {showModal && (
                 <TrailerModal
                     youtubeKey={trailerKey}
