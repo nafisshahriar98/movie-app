@@ -297,3 +297,34 @@
         border-radius: 6px;
     }
 }
+
+/* similar movies */
+
+.similar-movies {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-color);
+  }
+
+  .similar-title {
+      font-size: 1.3rem;
+      margin-bottom: 1.5rem;
+  }
+
+  .similar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+  }
+
+  .similar-loading {
+      color: var(--text-muted, #888);
+      padding: 1rem 0;
+      font-size: 0.95rem;
+  }
+
+  @media (max-width: 768px) {
+      .similar-grid {
+          grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      }
+  }

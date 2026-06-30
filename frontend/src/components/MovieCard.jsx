@@ -63,7 +63,6 @@ function MovieCard({ movie }) {
             </h3>
             <p>{movie.release_date?.split('-')[0]}</p>
             <p>Rating: {movie.vote_average}/10</p>
-            <p>Overview: {movie.overview}</p>
         </div>
         {showModal && (
             <TrailerModal youtubeKey={trailerKey} onClose={handleCloseModal} />

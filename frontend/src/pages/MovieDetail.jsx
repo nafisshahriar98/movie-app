@@ -1,25 +1,17 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { getMovieDetails, getMovieTrailer } from "../services/api";
-import { useMovieContext } from "../contexts/MovieContext";
-import TrailerModal from "../components/TrailerModal";
+import { getMovieDetails } from "../services/api";
 import WatchProviders from "../components/WatchProviders";
 import CastSection from "../components/CastSection";
-import TorrentPlayer from "../components/TorrentPlayer";
+import MovieMeta from "../components/MovieMeta";
+import MovieActions from "../components/MovieActions";
+import SimilarMovies from "../components/SimilarMovies";
 import "../css/MovieDetail.css";
 
 function MovieDetail() {
     const { id } = useParams();
     const [movie, setMovie] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [trailerKey, setTrailerKey] = useState(null);
-    const [showModal, setShowModal] = useState(false);
-    const [showStream, setShowStream] = useState(false);
-
-
-    //favorite button
-    const { addToFavorites, removeFromFavorites, isFavorite } = useMovieContext();
-    const favorite = movie ? isFavorite(movie.id) : false;
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -35,41 +27,8 @@ function MovieDetail() {
         fetchDetails();
     }, [id]);
 
-    const handleTrailer = async () => {
-        const key = await getMovieTrailer(id);
-        if (key) {
-            setTrailerKey(key);
-            setShowModal(true);
-        } else {
-            alert("No trailer available");
-        }
-    };
-
-    const handleFavorite = () => {
-        if (isFavorite(movie.id)) {
-            removeFromFavorites(movie.id);
-        } else {
-            addToFavorites(movie)
-        }
-    };
-
     if (loading) return <div className="detail-loading">Loading...</div>;
     if (!movie) return <div className="detail-loading">Movie not found.</div>;
-
-    //helper to format money
-    const formatMoney = (amount) => {
-        return amount > 0 ? `$${amount.toLocaleString()}` : "N/A";
-    }
-
-    //runtime: convert min to hour "2 hour 22 min"
-    const formatRuntime = (mins) => {
-        if (!mins) return "N/A"
-        const h = Math.floor(mins / 60);
-        const m = mins % 60;
-        return `${h}h ${m}m`;
-    }
-
-
 
     return (
         <div className="movie-detail">
@@ -104,13 +63,9 @@ function MovieDetail() {
                     </h1>
                     {movie.tagline && <p className="detail-tagline">"{movie.tagline}"</p>}
 
-                    <div className="detail-meta">
-                        <span>⭐ {movie.vote_average?.toFixed(1)}/10</span>
-                        <span>🕐 {formatRuntime(movie.runtime)}</span>
-                        <span>🌍 {movie.original_language?.toUpperCase()}</span>
-                        <span>📅 {movie.release_date}</span>
-                        <span>📊 {movie.status}</span>
-                    </div>
+                    {/* Details of the Movie */}
+                    <MovieMeta movie={movie} />
+
                     {/* Genres */}
                     <div className="detail-genres">
                         {movie.genres?.map(g => {
@@ -120,36 +75,12 @@ function MovieDetail() {
 
                     <p className="detail-overview">{movie.overview}</p>
 
-                    {/* Buttons */}
-                    <div className="detail-buttons">
-                        <button onClick={handleTrailer} className="btn-trailer">
-                            ▶ Watch Trailer
-                        </button>
-                        <button onClick={handleFavorite} className={`btn-favorite ${favorite ? "active" : ""}`}>
-                            {favorite ? "❤️ Saved" : "🤍 Add to Favorites"}
-                        </button>
-                        <button onClick={() => setShowStream(true)} className="btn-stream">
-                            🎬 Stream Movie
-                        </button>
-                    </div>
-                    {showStream && (
-                        <TorrentPlayer
-                            imdbId={movie.imdb_id}
-                            poster={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
-                        />
-                    )
-
-                    }
+                    <MovieActions movie={movie} movieId={id} />
                     <WatchProviders movieId={id} />
                     <CastSection movieId={id} />
+                    <SimilarMovies movieId={id} />
                 </div>
             </div>
-            {showModal && (
-                <TrailerModal
-                    youtubeKey={trailerKey}
-                    onClose={() => { setShowModal(false); setTrailerKey(null); }}
-                />
-            )}
         </div>
     );
 }

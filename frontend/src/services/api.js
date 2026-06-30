@@ -44,6 +44,14 @@ export const getWatchProviders = async (movieId) => {
 //cast and crew fetching
 export const getMovieCredits = async (movieId) => {
     const response = await fetch(`${BASE_URL}/movie/${movieId}/credits?api_key=${API_KEY}`);
-    if(!response.ok)throw new Error(`Failed to fetch credits: ${response.status}`);
+    if (!response.ok) throw new Error(`Failed to fetch credits: ${response.status}`);
     return await response.json();
 };
+
+export const getSimilarMovies = async (movieId) => {
+    const response = await fetch(
+        `https://api.themoviedb.org/3/movie/${movieId}/recommendations?api_key=${API_KEY}`
+    );
+    const data = await response.json();
+    return data.results || [];
+}
