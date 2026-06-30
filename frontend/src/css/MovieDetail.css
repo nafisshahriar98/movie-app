@@ -234,3 +234,66 @@
     color: var(--text-muted);
     font-size: 0.9rem;
 }
+
+/* Stream button */
+.btn-stream {
+    background-color: #16a34a;
+    color: white;
+    padding: 0.7rem 1.5rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-stream:hover {
+    background-color: #15803d;
+}
+
+/* Torrent player section */
+.torrent-player-wrapper {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    width: 100%;
+}
+
+.torrent-player-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted, #888);
+    margin-bottom: 1rem;
+}
+
+#torrent-player {
+    width: 100%;
+    min-height: 400px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #000;
+}
+
+.torrent-loading {
+    color: var(--text-muted, #888);
+    padding: 1rem 0;
+    font-size: 0.95rem;
+}
+
+.torrent-error {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    #torrent-player {
+        min-height: 220px;
+        border-radius: 6px;
+    }
+}

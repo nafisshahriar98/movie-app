@@ -5,6 +5,7 @@ import { useMovieContext } from "../contexts/MovieContext";
 import TrailerModal from "../components/TrailerModal";
 import WatchProviders from "../components/WatchProviders";
 import CastSection from "../components/CastSection";
+import TorrentPlayer from "../components/TorrentPlayer";
 import "../css/MovieDetail.css";
 
 function MovieDetail() {
@@ -13,6 +14,7 @@ function MovieDetail() {
     const [loading, setLoading] = useState(true);
     const [trailerKey, setTrailerKey] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [showStream, setShowStream] = useState(false);
 
 
     //favorite button
@@ -126,7 +128,18 @@ function MovieDetail() {
                         <button onClick={handleFavorite} className={`btn-favorite ${favorite ? "active" : ""}`}>
                             {favorite ? "❤️ Saved" : "🤍 Add to Favorites"}
                         </button>
+                        <button onClick={() => setShowStream(true)} className="btn-stream">
+                            🎬 Stream Movie
+                        </button>
                     </div>
+                    {showStream && (
+                        <TorrentPlayer
+                            imdbId={movie.imdb_id}
+                            poster={`https://image.tmdb.org/t/p/original${movie.backdrop_path}`}
+                        />
+                    )
+
+                    }
                     <WatchProviders movieId={id} />
                     <CastSection movieId={id} />
                 </div>
