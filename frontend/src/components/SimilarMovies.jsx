@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getSimilarMovies } from "../services/api";
 import MovieCard from "./MovieCard";
+import SkeletonCard from "./SkeletonCard";
 
 function SimilarMovies({ movieId }) {
     const [movies, setMovies] = useState([]);
@@ -12,7 +13,13 @@ function SimilarMovies({ movieId }) {
             .finally(() => setLoading(false));
     }, [movieId]);
 
-    if (loading) return <p className="similar-loading">Loading recommendations...</p>;
+    if (loading) return (
+        <div className="similar-grid">
+            {Array.from({ length: 6 }).map((_, i) => (
+                <SkeletonCard key={i} />
+            ))}
+        </div>
+    );
     if (movies.length === 0) return null;
 
     return (

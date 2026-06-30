@@ -1,6 +1,8 @@
-import MovieCard from "../components/MovieCard"
 import { useState, useEffect } from "react";
 import { searchMovies, getPopularMovies } from "../services/api";
+import MovieCard from "../components/MovieCard"
+import SkeletonCard from "../components/SkeletonCard";
+import "../css/SkeletonCard.css";
 import '../css/Home.css'
 
 
@@ -18,9 +20,9 @@ function Home() {
     useEffect(() => {
         const loadPopularMovies = async () => {
             try {
-                const {movies:results, totalPages} = await getPopularMovies(1);
+                const { movies: results, totalPages } = await getPopularMovies(1);
                 setMovies(results);
-                setHasMore(1<totalPages);
+                setHasMore(1 < totalPages);
             } catch (err) {
                 console.log(err)
                 setError("Failed to load movies...")
@@ -47,7 +49,7 @@ function Home() {
                 return;
             }
             try {
-                const {movies:results, totalPages} = await searchMovies(searchQuery);
+                const { movies: results, totalPages } = await searchMovies(searchQuery);
                 setSearchResultsDropdown(results.slice(0, 5)); //limit to top 5 suggestions
                 setDropdownVisible(true);
             } catch (err) {
@@ -75,10 +77,10 @@ function Home() {
         setLoading(true);
 
         try {
-            const {movies:results, totalPages} = await searchMovies(searchQuery,1);
+            const { movies: results, totalPages } = await searchMovies(searchQuery, 1);
             setMovies(results); //update main grid with search results
             setPage(1);
-            setHasMore(1<totalPages);
+            setHasMore(1 < totalPages);
             setError(null);
 
         } catch (err) {
@@ -92,17 +94,17 @@ function Home() {
     };
 
     //loading more pages
-    const handleLoadMore = async()=>{
-        const nextPage=page+1;
-        try{
-            const{movies:result, totalPages} = searchQuery.trim()
-            ? await searchMovies(searchQuery, nextPage)
-            :await getPopularMovies(nextPage);
+    const handleLoadMore = async () => {
+        const nextPage = page + 1;
+        try {
+            const { movies: result, totalPages } = searchQuery.trim()
+                ? await searchMovies(searchQuery, nextPage)
+                : await getPopularMovies(nextPage);
 
-            setMovies(prev=>[...prev, ...result]); //appened, not repalced
+            setMovies(prev => [...prev, ...result]); //appened, not repalced
             setPage(nextPage);
-            setHasMore(nextPage<totalPages);
-        }catch(err){
+            setHasMore(nextPage < totalPages);
+        } catch (err) {
             setError("Failed to laod more movies...");
         }
     }
@@ -127,18 +129,22 @@ function Home() {
                 {dropDownVisible && searchResultsDropdown.length > 0 && (
                     <ul className="search-dropdown">
                         {searchResultsDropdown.map(movie => (
-                            <li key={movie.id} onClick={() =>  handleSearchSuggestion(movie) }>
+                            <li key={movie.id} onClick={() => handleSearchSuggestion(movie)}>
                                 {movie.title}
                             </li>
                         ))}
                     </ul>
                 )}
             </form>
-            
+
 
             {error && <div className="error-message">{error}</div>}
 
-            {loading ? (<div className="loading">Loading...</div>) :
+            {loading ? (<div className="movies-grid">
+                {Array.from({ length: 12 }).map((_, i) => (
+                    <SkeletonCard key={i} />
+                ))}
+            </div>) :
                 (<div className="movies-grid">
                     {movies.map((movie) => (
                         <MovieCard movie={movie} key={movie.id} />
@@ -146,7 +152,7 @@ function Home() {
                 </div>)
             }
 
-            {hasMore && !loading &&(
+            {hasMore && !loading && (
                 <button className="load-more-btn" onClick={handleLoadMore}>
                     Load More
                 </button>
