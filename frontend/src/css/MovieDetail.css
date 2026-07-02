@@ -290,6 +290,44 @@
     font-size: 0.9rem;
 }
 
+.torrent-alternatives {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+}
+
+.torrent-alternatives p {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+.torrent-alternatives button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.35rem;
+    background: #1f1f1f;
+    color: #eee;
+    border: 1px solid #333;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.torrent-alternatives button:hover:not(:disabled) {
+    background: #2a2a2a;
+    border-color: #555;
+}
+
+.torrent-alternatives button:disabled {
+    background: #444;
+    color: #999;
+    cursor: default;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     #torrent-player {
