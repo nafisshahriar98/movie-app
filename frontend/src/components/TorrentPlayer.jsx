@@ -51,10 +51,11 @@ function scoreTorrent(t) {
 }
 
 function TorrentPlayer({ imdbId, poster }) {
-    const [magnet, setMagnet] = useState(null);   // magnet link for the currently active torrent
-    const [error, setError] = useState(null);      // error message to show the user
-    const [candidates, setCandidates] = useState([]); // top 5 scored torrents for this movie
+    const [magnet, setMagnet] = useState(null);       // magnet link for the currently active torrent
+    const [error, setError] = useState(null);          // error message to show the user
+    const [candidates, setCandidates] = useState([]);  // top 5 scored torrents for this movie
     const [activeIndex, setActiveIndex] = useState(0); // which candidate is currently playing
+    const [useFallback, setUseFallback] = useState(false); // true = Webtor, false = our Node server
 
     // Effect 1: fetch torrent options — try YTS first, fall back to apibay.
     // imdbId is in the dependency array — this re-runs whenever a different movie is opened.
@@ -131,13 +132,14 @@ function TorrentPlayer({ imdbId, poster }) {
             }
         };
 
+        setUseFallback(false); // reset fallback whenever movie changes
         fetchTorrents();
     }, [imdbId]);
 
-    // Effect 2: hand the magnet link to the Webtor player whenever it changes.
+    // Effect 2: hand the magnet to Webtor ONLY when useFallback is true.
     // Webtor is loaded via a <script> tag in index.html — it reads from window.webtor[].
     useEffect(() => {
-        if (!magnet) return;
+        if (!magnet || !useFallback) return;
 
         // Clear the container first — without this, switching sources stacks players on top of each other
         const container = document.getElementById("torrent-player");
@@ -152,7 +154,7 @@ function TorrentPlayer({ imdbId, poster }) {
             width: "100%",
             lang: "en",
         });
-    }, [magnet, poster]); // re-runs when user picks a different source OR the poster changes
+    }, [magnet, poster, useFallback]); // also re-runs when fallback is triggered
 
     return (
         <div className="torrent-player-wrapper">
@@ -164,8 +166,21 @@ function TorrentPlayer({ imdbId, poster }) {
             {/* Show loading state while waiting for apibay response */}
             {!magnet && !error && <p className="torrent-loading">⏳ Finding torrent...</p>}
 
-            {/* Webtor renders the video player inside this div */}
-            <div id="torrent-player"></div>
+            {/* Primary: stream via our own Node server — fast, no third-party dependency */}
+            {magnet && !useFallback && (
+                <video
+                    src={`http://localhost:3001/stream?magnet=${encodeURIComponent(magnet)}`}
+                    controls
+                    width="100%"
+                    poster={poster}
+                    onError={() => setUseFallback(true)} // Node server failed → switch to Webtor
+                />
+            )}
+
+            {/* Fallback: Webtor — activates if Node server errors or is unreachable */}
+            {magnet && useFallback && (
+                <div id="torrent-player"></div>
+            )}
 
             {/* Alternative sources — only shown when we have more than 1 candidate */}
             {candidates.length > 1 && (
@@ -177,7 +192,7 @@ function TorrentPlayer({ imdbId, poster }) {
                             disabled={i === activeIndex} // disable the one currently playing
                             onClick={() => {
                                 setActiveIndex(i);
-                                // Updating magnet triggers Effect 2 above, which swaps the player
+                                setUseFallback(false); // try Node server first for the new source too
                                 setMagnet(
                                     `magnet:?xt=urn:btih:${c.info_hash}&dn=${encodeURIComponent(c.name)}${trackerParams}`
                                 );
