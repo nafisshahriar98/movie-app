@@ -16,11 +16,34 @@ app.get("/", (req, res) => {
     res.send("Stream server is running");
 });
 
-// Helper: pipe the biggest file in a ready torrent to the response
-function pipeBiggestFile(torrent, res) {
-    const file = torrent.files.reduce((a, b) => a.size > b.size ? a : b);
+// Pick the file the client asked for (fileIdx from torrentio), with a safety check.
+// Falls back to the biggest file when no index was given (YTS/apibay candidates).
+function pickFile(torrent, req) {
+    const fileIdx = Number(req.query.fileIdx);
+
+    if (!Number.isNaN(fileIdx) && torrent.files[fileIdx]) {
+        const f = torrent.files[fileIdx];
+        // Sanity check: the index must point at a video file, not a .srt/.nfo
+        if (/\.(mp4|mkv|webm|avi)$/i.test(f.name)) return f;
+        console.log("[stream] fileIdx", fileIdx, "is not a video:", f.name);
+    }
+
+    // Fallback: biggest file in the torrent
+    return torrent.files.reduce((a, b) => (a.size > b.size ? a : b));
+}
+// Browsers decide playability from this header. Match the real file, not a guess.
+function contentTypeFor(name) {
+    if (/\.mkv$/i.test(name)) return "video/x-matroska";
+    if (/\.webm$/i.test(name)) return "video/webm";
+    if (/\.mp4$/i.test(name)) return "video/mp4";
+    return "application/octet-stream";
+}
+
+// Do the actual streaming: pick a file, set the honest content type, pipe it out.
+function pipeFile(torrent, req, res) {
+    const file = pickFile(torrent, req);
     console.log("[stream] piping:", file.name, `(${(file.length / 1e6).toFixed(1)}MB)`);
-    res.setHeader("Content-Type", "video/mp4");
+    res.setHeader("Content-Type", contentTypeFor(file.name));
     file.createReadStream().pipe(res);
 }
 
@@ -37,9 +60,9 @@ app.get("/stream", (req, res) => {
     if (existing) {
         console.log("[stream] reusing existing torrent:", existing.infoHash, "ready:", existing.ready);
         if (existing.ready) {
-            pipeBiggestFile(existing, res);
+            pipeFile(existing, req, res);
         } else {
-            existing.once("ready", () => pipeBiggestFile(existing, res));
+            existing.once("ready", () => pipeFile(existing, req, res));
         }
         return;
     }
@@ -51,7 +74,7 @@ app.get("/stream", (req, res) => {
     torrent.on("metadata", () => console.log("[stream] metadata received"));
     torrent.on("ready", () => {
         console.log(`[stream] READY — ${torrent.files.length} files, ${torrent.numPeers} peers`);
-        pipeBiggestFile(torrent, res);
+        pipeFile(torrent, req, res);
     });
     torrent.on("error", (err) => {
         console.error("[stream] torrent error:", err.message);

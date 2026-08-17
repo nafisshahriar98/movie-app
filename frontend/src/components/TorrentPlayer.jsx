@@ -49,6 +49,18 @@ function scoreTorrent(t) {
 
     return score;
 }
+const buildMagnet = (t) =>
+    `magnet:?xt=urn:btih:${t.info_hash}&dn=${encodeURIComponent(t.name)}${trackerParams}`;
+
+// Full URL for the <video> tag. Builds the magnet + tells the server which
+// file inside the torrent is the movie.
+function streamUrl(c) {
+    const params = new URLSearchParams();
+    params.set("magnet", buildMagnet(c));
+    if (c.fileIdx != null) params.set("fileIdx", c.fileIdx);
+    if (c.filename) params.set("filename", c.filename);
+    return `http://localhost:3001/stream?${params}`;
+}
 
 function TorrentPlayer({ imdbId, poster }) {
     const [magnet, setMagnet] = useState(null);       // magnet link for the currently active torrent
@@ -56,84 +68,188 @@ function TorrentPlayer({ imdbId, poster }) {
     const [candidates, setCandidates] = useState([]);  // top 5 scored torrents for this movie
     const [activeIndex, setActiveIndex] = useState(0); // which candidate is currently playing
     const [useFallback, setUseFallback] = useState(false); // true = Webtor, false = our Node server
+    const active = candidates[activeIndex];              // derive from state — no new state
+    const videoSrc = active ? streamUrl(active) : null;  // URL is a function of the candidate
 
     // Effect 1: fetch torrent options — try YTS first, fall back to apibay.
     // imdbId is in the dependency array — this re-runs whenever a different movie is opened.
     useEffect(() => {
-        const buildMagnet = (t) =>
-            `magnet:?xt=urn:btih:${t.info_hash}&dn=${encodeURIComponent(t.name)}${trackerParams}`;
-
+        let cancelled = false;   // per-effect-run variable
         const fetchTorrents = async () => {
-            // --- Step 1: try YTS ---
-            // YTS only indexes popular movies but every result is pre-filtered:
-            // small file size, H264, multiple qualities. Much faster to stream than raw apibay results.
+            // --- Step 1: Torrentio ---
             try {
-                const res = await fetch(`/api/yts/api/v2/list_movies.json?query_term=${imdbId}&limit=1`);
+                const res = await fetch(`/api/torrentio/stream/movie/${imdbId}.json`);
+                const json = await res.json();
+                const streams = json?.streams || [];
+
+                const candidates = streams
+                    .filter(s => s.infoHash)
+                    .map(s => {
+                        const title = s.title || "";
+
+                        const seeders =
+                            Number(title.match(/👤\s*(\d+)/)?.[1]) || 0;
+
+                        const sizeMatch = title.match(/💾\s*([\d.]+)\s*GB/i);
+                        const sizeGB = sizeMatch
+                            ? Number(sizeMatch[1])
+                            : null;
+
+                        return {
+                            info_hash: s.infoHash,
+                            name: title.split("\n")[0],
+                            seeders,
+                            sizeGB,
+
+                            // Keep null if Torrentio doesn't specify a file
+                            fileIdx: s.fileIdx ?? null,
+
+                            filename:
+                                s.behaviorHints?.filename || "",
+                        };
+                    })
+                    .filter(c =>
+                        c.seeders > 0 &&
+                        (c.sizeGB === null || c.sizeGB < 8)
+                    )
+                    .sort((a, b) => {
+                        const aPlayable = a.filename?.endsWith(".mp4") ? 1 : 0;
+                        const bPlayable = b.filename?.endsWith(".mp4") ? 1 : 0;
+                        return bPlayable - aPlayable;   // mp4 (plays in Chrome) rises to the top
+                    })
+                    .slice(0, 5);
+
+                if (candidates.length > 0) {
+                    if (cancelled) return;   // this movie is no longer on screen — ignore results
+                    setCandidates(candidates);
+                    setMagnet(buildMagnet(candidates[0]));
+                    return;
+                }
+            } catch (_) {
+                // Torrentio failed -> try YTS
+            }
+
+
+            // --- Step 2: YTS ---
+            try {
+                const res = await fetch(
+                    `/api/yts/api/v2/list_movies.json?query_term=${imdbId}&limit=1`
+                );
+
                 const json = await res.json();
                 const movie = json?.data?.movies?.[0];
 
                 if (movie?.torrents?.length > 0) {
+
                     const ytsScore = (t) =>
-                        (t.quality === "1080p" ? 500 : t.quality === "720p" ? 300 : 0) +
+                        (t.quality === "1080p"
+                            ? 500
+                            : t.quality === "720p"
+                                ? 300
+                                : 0) +
                         (t.type === "bluray" ? 100 : 50) +
                         (t.seeds || 0);
 
                     const ytsCandidates = movie.torrents
-                        .filter(t => t.quality !== "2160p" && (t.seeds || 0) > 0)
-                        .sort((a, b) => ytsScore(b) - ytsScore(a))
+                        .filter(
+                            t =>
+                                t.quality !== "2160p" &&
+                                (t.seeds || 0) > 0
+                        )
+                        .sort(
+                            (a, b) =>
+                                ytsScore(b) - ytsScore(a)
+                        )
                         .slice(0, 5)
-                        // Normalize to the same shape the JSX expects: info_hash, name, seeders
                         .map(t => ({
                             info_hash: t.hash,
-                            name: `${movie.title} ${t.quality} ${t.type}`,
+
+                            name:
+                                `${movie.title} ${t.quality} ${t.type}`,
+
                             seeders: t.seeds,
+
                             _score: ytsScore(t),
+
+                            // YTS doesn't provide Torrentio fileIdx
+                            fileIdx: null,
                         }));
 
                     if (ytsCandidates.length > 0) {
+                        if (cancelled) return;   // this movie is no longer on screen — ignore results
                         setCandidates(ytsCandidates);
-                        setMagnet(buildMagnet(ytsCandidates[0]));
-                        return; // YTS worked — skip apibay entirely
+
+                        setMagnet(
+                            buildMagnet(ytsCandidates[0])
+                        );
+
+                        return;
                     }
                 }
             } catch (_) {
-                // YTS unreachable or returned bad data — fall through to apibay
+                // YTS failed -> try ApiBay
             }
 
-            // --- Step 2: fall back to apibay ---
-            // Covers movies not on YTS: older films, foreign, documentaries, niche releases.
-            // cat=207 is apibay's category for HD movies.
+
+            // --- Step 3: ApiBay ---
             try {
-                const res = await fetch(`/api/piratebay/q.php?q=${imdbId}&cat=207`);
+                const res = await fetch(
+                    `/api/piratebay/q.php?q=${imdbId}&cat=207`
+                );
+
                 const data = await res.json();
 
-                // apibay returns [{id:"0"}] when nothing is found
-                if (!data || data.length === 0 || data[0].id === "0") {
-                    setError("No torrent found for this movie.");
+                if (
+                    !data ||
+                    data.length === 0 ||
+                    data[0].id === "0"
+                ) {
+                    if (cancelled) return;  // this movie is no longer on screen — ignore results
+                    setError(
+                        "No torrent found for this movie."
+                    );
                     return;
                 }
 
-                // Score every result, drop unusable ones, take the top 5
                 const scored = data
-                    .map(t => ({ ...t, _score: scoreTorrent(t) }))
+                    .map(t => ({
+                        ...t,
+                        _score: scoreTorrent(t),
+                        fileIdx: null,
+                    }))
                     .filter(t => t._score > 0)
-                    .sort((a, b) => b._score - a._score)
+                    .sort(
+                        (a, b) =>
+                            b._score - a._score
+                    )
                     .slice(0, 5);
 
                 if (scored.length === 0) {
-                    setError("No streamable torrent found.");
+                    if (cancelled) return;  // this movie is no longer on screen — ignore results
+                    setError(
+                        "No streamable torrent found."
+                    );
                     return;
                 }
-
+                if (cancelled) return;
                 setCandidates(scored);
                 setMagnet(buildMagnet(scored[0]));
+
             } catch (_) {
+                if (cancelled) return;  // this movie is no longer on screen — ignore results
                 setError("Failed to find torrent.");
             }
         };
-
         setUseFallback(false); // reset fallback whenever movie changes
+        setError(null);      // old movie's error must not haunt the new movie
+        setActiveIndex(0);   // start on the best candidate again
+        setCandidates([]);   // old movie's list must not flash
+        setMagnet(null);     // old movie's player must not keep playing
         fetchTorrents();
+
+        return () => {
+            cancelled = true;   // React runs this before the next effect run
+        };
     }, [imdbId]);
 
     // Effect 2: hand the magnet to Webtor ONLY when useFallback is true.
@@ -168,13 +284,15 @@ function TorrentPlayer({ imdbId, poster }) {
 
             {/* Primary: stream via our own Node server — fast, no third-party dependency */}
             {magnet && !useFallback && (
-                <video
-                    src={`http://localhost:3001/stream?magnet=${encodeURIComponent(magnet)}`}
-                    controls
-                    width="100%"
-                    poster={poster}
-                    onError={() => setUseFallback(true)} // Node server failed → switch to Webtor
-                />
+                videoSrc && (
+                    <video
+                        src={videoSrc}
+                        controls
+                        width="100%"
+                        poster={poster}
+                        onError={() => setUseFallback(true)} // Node server failed → switch to Webtor
+                    />
+                )
             )}
 
             {/* Fallback: Webtor — activates if Node server errors or is unreachable */}
@@ -193,9 +311,7 @@ function TorrentPlayer({ imdbId, poster }) {
                             onClick={() => {
                                 setActiveIndex(i);
                                 setUseFallback(false); // try Node server first for the new source too
-                                setMagnet(
-                                    `magnet:?xt=urn:btih:${c.info_hash}&dn=${encodeURIComponent(c.name)}${trackerParams}`
-                                );
+                                setMagnet(buildMagnet(c));   // was: the hand-built string
                             }}
                         >
                             {c.name.slice(0, 60)} · {c.seeders} seeders
