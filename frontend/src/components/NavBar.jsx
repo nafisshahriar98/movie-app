@@ -22,6 +22,7 @@ function NavBar() {
 
             <div className="navbar-links">
                 <Link to="/" className="nav-link">Home</Link>
+                <Link to="/series" className="nav-link">Series</Link>
 
                 {!isLoading && user && (
                     <>

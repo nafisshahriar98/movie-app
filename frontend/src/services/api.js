@@ -55,3 +55,27 @@ export const getSimilarMovies = async (movieId) => {
     const data = await response.json();
     return data.results || [];
 }
+
+export const getPopularSeries = async (page = 1) => {
+    const response = await fetch(`${BASE_URL}/tv/popular?api_key=${API_KEY}&page=${page}`);
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch series: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { series: data.results, totalPages: data.total_pages };
+};
+
+export const searchSeries = async (query, page = 1) => {
+    const response = await fetch(
+        `${BASE_URL}/search/tv?api_key=${API_KEY}&query=${encodeURIComponent(query)}&page=${page}`
+    );
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch series: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { series: data.results, totalPages: data.total_pages };
+};
