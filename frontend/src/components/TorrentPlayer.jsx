@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
 
-// Browsers can ONLY connect to WebSocket (wss://) trackers — not UDP.
-// These are the known public WSS trackers that WebTorrent (used by Webtor) can reach.
-const WSS_TRACKERS = [
-    "wss://tracker.btorrent.xyz",
+// Trackers embedded in every magnet. UDP/HTTP trackers are what the Node
+// stream-server needs to find peers; wss:// ones are for browser clients.
+const TRACKERS = [
+    "udp://tracker.opentrackr.org:1337/announce",
+    "udp://open.demonii.com:1337/announce",
+    "udp://tracker.openbittorrent.com:6969/announce",
+    "udp://exodus.desync.com:6969/announce",
     "wss://tracker.openwebtorrent.com",
-    "wss://tracker.webtorrent.dev",
-    "wss://tracker.files.fm:7073/announce",
+    "wss://tracker.btorrent.xyz",
 ];
 
 // Pre-build the tracker query string once so we don't repeat it for every magnet link.
 // encodeURIComponent makes the URL safe to embed inside the magnet string.
-const trackerParams = WSS_TRACKERS
+const trackerParams = TRACKERS
     .map(t => `&tr=${encodeURIComponent(t)}`)
     .join("");
 
@@ -113,9 +115,11 @@ function TorrentPlayer({ imdbId, poster }) {
                         (c.sizeGB === null || c.sizeGB < 8)
                     )
                     .sort((a, b) => {
-                        const aPlayable = a.filename?.endsWith(".mp4") ? 1 : 0;
-                        const bPlayable = b.filename?.endsWith(".mp4") ? 1 : 0;
-                        return bPlayable - aPlayable;   // mp4 (plays in Chrome) rises to the top
+                        // mp4 container + non-x265 codec = plays in every browser
+                        const playable = c =>
+                            (c.filename?.endsWith(".mp4") ? 2 : 0) +
+                            (/x265|hevc/i.test(`${c.name} ${c.filename}`) ? -1 : 0);
+                        return playable(b) - playable(a);
                     })
                     .slice(0, 5);
 

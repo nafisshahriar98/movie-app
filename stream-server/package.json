@@ -13,6 +13,7 @@
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "node-datachannel": "^0.33.1",
     "webtorrent": "^3.0.16"
   }
 }

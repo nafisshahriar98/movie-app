@@ -5,6 +5,19 @@ import WebTorrent from "webtorrent";
 const app = express();
 const client = new WebTorrent();
 
+// Node clients should use UDP/HTTP trackers — far more reliable than the
+// browser-only wss:// trackers the frontend magnets carry. Passed via the
+// `announce` option so every magnet gets them regardless of its own list.
+const ANNOUNCE = [
+    "udp://tracker.opentrackr.org:1337/announce",
+    "udp://open.demonii.com:1337/announce",
+    "udp://tracker.openbittorrent.com:6969/announce",
+    "udp://exodus.desync.com:6969/announce",
+    "udp://tracker.torrent.eu.org:451/announce",
+    "udp://tracker.tiny-vps.com:6969/announce",
+    "http://tracker.opentrackr.org:1337/announce",
+];
+
 // Prevent unhandled torrent errors from crashing the server
 client.on("error", (err) => {
     console.error("WebTorrent error:", err.message);
@@ -40,10 +53,44 @@ function contentTypeFor(name) {
 }
 
 // Do the actual streaming: pick a file, set the honest content type, pipe it out.
+// Handles HTTP Range requests — browsers require them for <video> playback/seeking.
 function pipeFile(torrent, req, res) {
     const file = pickFile(torrent, req);
-    console.log("[stream] piping:", file.name, `(${(file.length / 1e6).toFixed(1)}MB)`);
-    res.setHeader("Content-Type", contentTypeFor(file.name));
+    const total = file.length;
+    const type = contentTypeFor(file.name);
+    console.log("[stream] piping:", file.name, `(${(total / 1e6).toFixed(1)}MB)`);
+
+    const range = req.headers.range;
+    if (range) {
+        // Parse "bytes=start-end" (end optional)
+        const [startStr, endStr] = range.replace(/bytes=/, "").split("-");
+        let start = parseInt(startStr, 10);
+        let end = endStr ? parseInt(endStr, 10) : -1;
+
+        if (Number.isNaN(start) || start >= total || (endStr && end < start)) {
+            res.writeHead(416, { "Content-Range": `bytes */${total}` });
+            return res.end();
+        }
+        // Serve at most 4MB per request so the player buffers progressively
+        end = end < 0 || end > start + 4 * 1024 * 1024 - 1
+            ? Math.min(start + 4 * 1024 * 1024 - 1, total - 1)
+            : Math.min(end, total - 1);
+
+        console.log(`[stream] range ${start}-${end}/${total}`);
+        res.writeHead(206, {
+            "Content-Range": `bytes ${start}-${end}/${total}`,
+            "Accept-Ranges": "bytes",
+            "Content-Length": end - start + 1,
+            "Content-Type": type,
+        });
+        return file.createReadStream({ start, end }).pipe(res);
+    }
+
+    res.writeHead(200, {
+        "Accept-Ranges": "bytes",
+        "Content-Length": total,
+        "Content-Type": type,
+    });
     file.createReadStream().pipe(res);
 }
 
@@ -68,7 +115,7 @@ app.get("/stream", (req, res) => {
     }
 
     console.log("[stream] adding new torrent...");
-    const torrent = client.add(magnet);
+    const torrent = client.add(magnet, { announce: ANNOUNCE });
 
     torrent.on("infoHash", () => console.log("[stream] infoHash:", torrent.infoHash));
     torrent.on("metadata", () => console.log("[stream] metadata received"));

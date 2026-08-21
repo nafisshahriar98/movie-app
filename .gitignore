@@ -4,6 +4,9 @@ frontend/.env
 frontend/.env.local
 frontend/build/
 
+# Stream server
+stream-server/node_modules/
+
 # ASP.NET Core backend
 backend/bin/
 backend/obj/
@@ -11,4 +14,4 @@ backend/.vs/
 backend/appsettings*.json
 
 # General
-.DS_Storecd
+.DS_Store
