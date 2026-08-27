@@ -11,6 +11,8 @@ builder.Services.Configure<MongoDbSettings>(
     builder.Configuration.GetSection("MongoDbSettings"));
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings"));
+builder.Services.Configure<TmdbSettings>(
+    builder.Configuration.GetSection("TmdbSettings"));
 
 // 2. Register our own services for DI
 
