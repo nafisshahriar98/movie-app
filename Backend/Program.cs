@@ -2,6 +2,7 @@ using System.Text;
 using Backend.Services;
 using Backend.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +20,12 @@ builder.Services.Configure<TmdbSettings>(
 builder.Services.AddSingleton<MongoDbService>();
 builder.Services.AddSingleton<JwtService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddHttpClient<TmdbService>((sp, http) =>
+{
+    var setting = sp.GetRequiredService<IOptions<TmdbSettings>>().Value;
+    http.BaseAddress = new Uri(setting.BaseUrl.TrimEnd('/') + "/");
+    http.Timeout = TimeSpan.FromSeconds(15);
+});
 
 // 3. CORS so the React frontend can call this API
 const string CorsPolicy = "AllowReactApp";
